@@ -209,11 +209,15 @@ describe("server identity and tool list", () => {
       properties: {
         path: { type: "string" },
         tail: {
-          type: "number",
+          type: "integer",
+          minimum: 0,
+          maximum: 9007199254740991,
           description: "If provided, returns only the last N lines of the file",
         },
         head: {
-          type: "number",
+          type: "integer",
+          minimum: 0,
+          maximum: 9007199254740991,
           description:
             "If provided, returns only the first N lines of the file",
         },
@@ -365,22 +369,40 @@ describe("read_text_file and read_file", () => {
     expect(textOf(result)).toBe("four\n");
   });
 
-  it("treats head: 0 as absent and returns the whole file", async () => {
+  it("returns an empty string when head is 0 (#5184)", async () => {
     const result = await call(client, "read_text_file", {
       path: file,
       head: 0,
     });
-    expect(textOf(result)).toBe("one\ntwo\nthree\nfour\n");
+    expect(textOf(result)).toBe("");
   });
 
-  it("rejects head and tail together", async () => {
+  it("returns an empty string when tail is 0 (#5184)", async () => {
     const result = await call(client, "read_text_file", {
+      path: file,
+      tail: 0,
+    });
+    expect(textOf(result)).toBe("");
+  });
+
+  it("rejects head and tail together, including when both are 0 (#5184)", async () => {
+    const result1 = await call(client, "read_text_file", {
       path: file,
       head: 1,
       tail: 1,
     });
-    expect(result.isError).toBe(true);
-    expect(textOf(result)).toBe(
+    expect(result1.isError).toBe(true);
+    expect(textOf(result1)).toBe(
+      "Cannot specify both head and tail parameters simultaneously",
+    );
+
+    const result2 = await call(client, "read_text_file", {
+      path: file,
+      head: 0,
+      tail: 0,
+    });
+    expect(result2.isError).toBe(true);
+    expect(textOf(result2)).toBe(
       "Cannot specify both head and tail parameters simultaneously",
     );
   });
