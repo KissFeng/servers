@@ -633,9 +633,14 @@ export class KnowledgeGraphManager {
         if (!entity) {
           throw new Error(`Entity with name ${o.entityName} not found`);
         }
-        const newObservations = o.contents.filter(
-          (content) => !entity.observations.includes(content),
-        );
+        const seen = new Set(entity.observations);
+        const newObservations: string[] = [];
+        for (const content of o.contents) {
+          if (!seen.has(content)) {
+            seen.add(content);
+            newObservations.push(content);
+          }
+        }
         entity.observations.push(...newObservations);
         return { entityName: o.entityName, addedObservations: newObservations };
       });
